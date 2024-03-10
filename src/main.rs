@@ -2,6 +2,7 @@
 // use std::fs::File;
 // use std::io::{Write, BufReader, BufRead, Error};
 use std::process::Command;
+use std::process::Stdio;
 
 use fzf_wrapped::Fzf;
 use fzf_wrapped::run_with_output;
@@ -51,37 +52,35 @@ fn list_files() {
     // get_remote();
     let remote = get_remote();
 
-    let output = Command::new("rclone")
-        .arg("ls")
-        .arg(remote)
-        .output()
-        .expect("failed");
+    let mut command = Command::new("rclone");
+        command.arg("ls");
+        command.arg(remote);
+        command.stdout(Stdio::inherit());
 
-    if output.status.success() {
-        let output_str = String::from_utf8_lossy(&output.stdout);
-        println!("{}", output_str);
-    } else {
-        let error_str = String::from_utf8_lossy(&output.stderr);
-        println!("Error: {}", error_str);
+    let output = command.output().unwrap();
+
+    if !output.status.success() {
+        let output_str = String::from_utf8_lossy(&output.stderr);
+        println!("Error: {}", output_str);
     }
 }
 
 fn copy_files(source: String, target: String) {
     let remote = get_remote();
 
-    let output = Command::new("rclone")
-        .arg("copy")
-        .arg("--progress")
-        .arg("--verbose")
-        .arg(source)
-        .arg(remote + "/" + &target)
-        .output()
-        .expect("failed");
+    let mut command = Command::new("rclone");
+        command.arg("copy");
+        command.arg("--progress");
+        command.arg("--verbose");
+        command.arg(source);
+        command.arg(remote + "/" + &target);
+        command.stdout(Stdio::inherit());
 
-    if output.status.success() {
-        let output_str = String::from_utf8_lossy(&output.stdout);
-        println!("{}", output_str);
-    } else {
+    let output = command.output().unwrap();
+
+    println!("{}", String::from_utf8(output.stdout).unwrap());
+
+    if !output.status.success() {
         let error_str = String::from_utf8_lossy(&output.stderr);
         println!("Error: {}", error_str);
     }
@@ -110,33 +109,29 @@ fn mount_cloud_service() {
 
     let mount_point = mount_points[mount_point_index];
 
-    let output = Command::new("rclone")
-        .arg("mount")
-        .arg("--daemon")
-        .arg(remote)
-        .arg(String::from("/home/darkelectron/Cloud/") + mount_point)
-        .output()
-        .expect("failed");
+    let mut command = Command::new("rclone");
+        command.arg("mount");
+        command.arg("--daemon");
+        command.arg(remote);
+        command.arg(String::from("/home/darkelectron/Cloud/") + mount_point);
 
-    if output.status.success() {
-        let output_str = String::from_utf8_lossy(&output.stdout);
-        println!("{}", output_str);
-    } else {
+    let output = command.output().unwrap();
+
+    println!("{}", String::from_utf8(output.stdout).unwrap());
+
+    if !output.status.success() {
         let error_str = String::from_utf8_lossy(&output.stderr);
         println!("Error: {}", error_str);
     }
 }
 
 fn main() {
-    // list_files();
     let args: RclonerArgs = RclonerArgs::parse();
 
     match args.entity_type {
         EntityType::Copy(copy) => copy_files(copy.source, copy.target),
         EntityType::Mount(_) => mount_cloud_service(),
         EntityType::List(_) => list_files(),
-        // EntityType::Video(video) => handle_video_command(video),
-        // EntityType::View(view) => handle_view_command(view),
     }
 }
 
