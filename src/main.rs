@@ -74,7 +74,7 @@ fn copy_files(source: String, target: String) {
         .arg("--progress")
         .arg("--verbose")
         .arg(source)
-        .arg(remote + &target)
+        .arg(remote + "/" + &target)
         .output()
         .expect("failed");
 
