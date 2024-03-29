@@ -1,3 +1,4 @@
+use std::process::exit;
 use std::process::Command;
 use std::process::Stdio;
 
@@ -25,13 +26,16 @@ fn get_remote() -> String {
 
     let users_selection = run_with_output(Fzf::default(), remotes).expect("Something went wrong!");
 
-    println!("Using Cloud Service: {}", users_selection);
-
-    return users_selection;
+    if !users_selection.is_empty() {
+        println!("Using Cloud Service: {}", users_selection);
+        return users_selection;
+    } else {
+        println!("Nothing Selected");
+        exit(1);
+    }
 }
 
 fn list_files() {
-    // get_remote();
     let remote = get_remote();
 
     let mut command = Command::new("rclone");
