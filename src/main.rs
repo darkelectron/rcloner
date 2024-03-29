@@ -1,6 +1,3 @@
-// use std::fs;
-// use std::fs::File;
-// use std::io::{Write, BufReader, BufRead, Error};
 use std::process::Command;
 use std::process::Stdio;
 
@@ -8,38 +5,23 @@ use fzf_wrapped::Fzf;
 use fzf_wrapped::run_with_output;
 
 mod args;
+mod config;
 
 use args::EntityType;
 use args::RclonerArgs;
 use clap::Parser;
 
-// fn read_file() {
-//     let sources_filenames = "/home/darkelectron/Falcon/Tools/rcloner/sources_filenames.txt";
-//
-//     let info = fs::read_to_string(sources_filenames).expect("The file could not be read");
-//     println!("{}", info);
-// }
-//
-// fn write_file() -> Result<(), Error> {
-//     let sources_filenames = "/home/darkelectron/Falcon/Tools/rcloner/sources_filenames.txt";
-//
-//     let mut output = File::create(sources_filenames)?; // opens file for writing
-//     write!(output, "New thing")?;
-//
-//     /* opens file for reading */
-//     let input = File::open(sources_filenames)?;
-//     let buffered = BufReader::new(input);
-//
-//     for line in buffered.lines() {
-//         println!("{}", line?);
-//     }
-//
-//     Ok(())
-// }
+use config::read_config;
 
 fn get_remote() -> String {
+    let mut remotes = Vec::new();
 
-    let remotes = vec!["megadrive:", "gdrive:", "nextcloud:", "proton:"];
+    match read_config() {
+        Ok(config) => {
+            remotes = config.rdrives;
+        }
+        Err(e) => println!("Error reading config: {}", e),
+    }
 
     let users_selection = run_with_output(Fzf::default(), remotes).expect("Something went wrong!");
 
