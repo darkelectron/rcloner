@@ -1,0 +1,2 @@
+rdrives = ["megadrive:"]
+mountdirs = ["Mega"]
