@@ -75,7 +75,17 @@ fn copy_files(source: String, target: String) {
 fn mount_cloud_service() {
     let remote = get_remote();
 
-    let remotes = vec!["megadrive:", "gdrive:", "nextcloud:", "proton:"];
+    let mut remotes = Vec::new();
+    let mut mount_points = Vec::new();
+
+    match read_config() {
+        Ok(config) => {
+            remotes = config.rdrives;
+            mount_points = config.mountdirs;
+        }
+        Err(e) => println!("Error reading config: {}", e),
+    }
+
     let mut mount_point_index = 0;
 
     // let target = "banana".to_string();
@@ -91,15 +101,13 @@ fn mount_cloud_service() {
         }
     }
 
-    let mount_points = vec!["Mega", "Google", "Nextcloud", "Proton"];
-
-    let mount_point = mount_points[mount_point_index];
+    let mount_point = &mount_points[mount_point_index];
 
     let mut command = Command::new("rclone");
         command.arg("mount");
         command.arg("--daemon");
         command.arg(remote);
-        command.arg(String::from("/home/darkelectron/Cloud/") + mount_point);
+        command.arg(String::from("/home/darkelectron/Cloud/") + &mount_point);
 
     let output = command.output().unwrap();
 

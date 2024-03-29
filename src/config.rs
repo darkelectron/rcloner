@@ -5,9 +5,8 @@ use toml;
 use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
-    pub name: String,
-    pub version: String,
     pub rdrives: Vec<String>,
+    pub mountdirs: Vec<String>,
 }
 
 
