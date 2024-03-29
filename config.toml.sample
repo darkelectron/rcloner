@@ -1,2 +1,0 @@
-rdrives = ["megadrive:", "gdrive:", "nextcloud:", "proton:"]
-mountdirs = ["Mega", "Google", "Nextcloud", "Proton"]
