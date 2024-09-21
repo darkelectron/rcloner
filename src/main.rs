@@ -1,28 +1,38 @@
 use std::process::exit;
 use std::process::Command;
 use std::process::Stdio;
+use std::path::Path;
+use std::fs;
+
+extern crate notify_rust;
+use notify_rust::Notification;
 
 use fzf_wrapped::Fzf;
 use fzf_wrapped::run_with_output;
 
 mod args;
-mod config;
 
 use args::EntityType;
 use args::RclonerArgs;
 use clap::Parser;
 
-use config::read_config;
+fn list_remotes() -> Vec<String> {
+    let output = Command::new("rclone")
+        .arg("listremotes")
+        .output()
+        .expect("Failed to execute command");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);    let remotes: Vec<String> = stdout
+        .trim()
+        .split('\n')
+        .map(|s| s.to_string())
+        .collect();
+
+    remotes
+}
 
 fn get_remote() -> String {
-    let mut remotes = Vec::new();
-
-    match read_config() {
-        Ok(config) => {
-            remotes = config.rdrives;
-        }
-        Err(e) => println!("Error reading config: {}", e),
-    }
+    let remotes = list_remotes();
 
     let users_selection = run_with_output(Fzf::default(), remotes).expect("Something went wrong!");
 
@@ -75,39 +85,24 @@ fn copy_files(source: String, target: String) {
 fn mount_cloud_service() {
     let remote = get_remote();
 
-    let mut remotes = Vec::new();
-    let mut mount_points = Vec::new();
+    // let mut mount_point = remote.clone();
+    let mount_point = remote.trim_matches(|c| c == '"' || c == ':').to_string();
 
-    match read_config() {
-        Ok(config) => {
-            remotes = config.rdrives;
-            mount_points = config.mountdirs;
-        }
-        Err(e) => println!("Error reading config: {}", e),
+    let path_name = "/home/darkelectron/Cloud/".to_owned() + &mount_point;
+    let dir_path = Path::new(&path_name);
+
+    if dir_path.is_dir() {
+        println!("Directory exists!");
+    } else {
+        println!("Directory does not exist.");
+        fs::create_dir(dir_path).expect("Failed to create Directory");
     }
-
-    let mut mount_point_index = 0;
-
-    // let target = "banana".to_string();
-    // Iterate over the Vec with indices
-    for (index, value) in remotes.iter().enumerate() {
-        // Check if the current value matches the target
-        if *value == remote {
-            mount_point_index = index;
-            // Print the index
-            println!("Found '{}' at index {}", remote, index);
-            // Optionally, break the loop if you only want the first occurrence
-            break;
-        }
-    }
-
-    let mount_point = &mount_points[mount_point_index];
 
     let mut command = Command::new("rclone");
         command.arg("mount");
         command.arg("--daemon");
-        command.arg(remote);
-        command.arg(String::from("/home/darkelectron/Cloud/") + &mount_point);
+        command.arg(remote.clone());
+        command.arg(dir_path);
 
     let output = command.output().unwrap();
 
@@ -117,6 +112,12 @@ fn mount_cloud_service() {
         let error_str = String::from_utf8_lossy(&output.stderr);
         println!("Error: {}", error_str);
     }
+    Notification::new()
+        .summary("Drive Mounted")
+        .body("Drive was mounted successfully")
+        .icon("rclone-browser")
+        .show().unwrap();
+
 }
 
 fn main() {
